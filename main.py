@@ -1,13 +1,13 @@
 import asyncio
 asyncio.set_event_loop(asyncio.new_event_loop())
 
-from bot import Bot, web_app, run_flask
+from bot import Bot, web_app
 from pyrogram import compose
 from config import *
 from threading import Thread
 
 # 🚀 Start Flask FIRST for Render health check
-Thread(target=run_flask, daemon=True).start()
+#Thread(target=run_flask, daemon=True).start()
 
 async def main():
     app = []
