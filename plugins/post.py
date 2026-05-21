@@ -64,40 +64,87 @@ async def _verify_bot_rights(client: Client, channel_id: int) -> tuple[bool, str
 
 # ─── Button parser ─────────────────────────────────────────────────────────────
 
+def safe_callback(data: str, limit: int = 40) -> str:
+    """
+    Telegram callback_data limit is 64 bytes.
+    This safely trims UTF-8 strings.
+    """
+    return data.encode("utf-8")[:limit].decode("utf-8", "ignore")
+
+
 def _parse_buttons(text: str) -> list[list[InlineKeyboardButton]]:
     rows: list[list[InlineKeyboardButton]] = []
+
     for raw_line in text.strip().splitlines():
         line = raw_line.strip()
+
         if not line:
             continue
+
+        # Single popup button
         if " - " not in line:
             rows.append([
-                InlineKeyboardButton(line, callback_data=f"post_alert:{line[:60]}")
+                InlineKeyboardButton(
+                    line[:64],  # visible button text
+                    callback_data=f"post_alert:{safe_callback(line)}"
+                )
             ])
             continue
+
         cells = [c.strip() for c in line.split("|")]
+
         if len(cells) > 3:
             raise ValueError(
                 f"ᴛᴏᴏ ᴍᴀɴʏ ʙᴜᴛᴛᴏɴs ɪɴ ᴏɴᴇ ʀᴏᴡ (ᴍᴀx 3):\n<code>{line}</code>"
             )
+
         row: list[InlineKeyboardButton] = []
+
         for cell in cells:
+
             if " - " not in cell:
                 raise ValueError(
                     f"ɪɴᴠᴀʟɪᴅ ꜰᴏʀᴍᴀᴛ — ᴇxᴘᴇᴄᴛᴇᴅ <code>ᴛᴇxᴛ - ᴜʀʟ</code>:\n<code>{cell}</code>"
                 )
+
             label, _, value = cell.partition(" - ")
-            label = label.strip(); value = value.strip()
+
+            label = label.strip()
+            value = value.strip()
+
             if not label or not value:
-                raise ValueError(f"ᴇᴍᴘᴛʏ ʟᴀʙᴇʟ ᴏʀ ᴠᴀʟᴜᴇ: <code>{cell}</code>")
+                raise ValueError(
+                    f"ᴇᴍᴘᴛʏ ʟᴀʙᴇʟ ᴏʀ ᴠᴀʟᴜᴇ: <code>{cell}</code>"
+                )
+
+            # URL button
             if _URL_RE.match(value):
-                row.append(InlineKeyboardButton(label, url=value))
+
+                row.append(
+                    InlineKeyboardButton(
+                        text=label[:64],
+                        url=value
+                    )
+                )
+
+            # Popup alert button
             else:
-                row.append(InlineKeyboardButton(label, callback_data=f"post_alert:{value[:60]}"))
+
+                safe_data = safe_callback(value)
+
+                row.append(
+                    InlineKeyboardButton(
+                        text=label[:64],
+                        callback_data=f"post_alert:{safe_data}"
+                    )
+                )
+
         if row:
             rows.append(row)
+
     if not rows:
         raise ValueError("ɴᴏ ᴠᴀʟɪᴅ ʙᴜᴛᴛᴏɴs ꜰᴏᴜɴᴅ ɪɴ ʏᴏᴜʀ ᴛᴇxᴛ.")
+
     return rows
 
 
@@ -309,7 +356,10 @@ async def cmd_send(client: Client, message: Message):
 
 async def _copy_to_channel(client: Client, src: Message, channel_id: int, reply_markup) -> Message:
     if src.document or src.audio or src.video or src.voice or src.video_note:
-        return await src.copy(chat_id=channel_id, reply_markup=None)
+    return await src.copy(
+        chat_id=channel_id,
+        reply_markup=reply_markup
+    )
     if src.photo:
         return await client.send_photo(
             chat_id=channel_id,
