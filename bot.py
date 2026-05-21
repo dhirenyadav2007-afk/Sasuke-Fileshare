@@ -1,9 +1,10 @@
-#(©) Codeflix_Bots
+# made by botifyx-bots 
+# support @BotifyX_Pro_Botz
 import os
 from aiohttp import web
 from plugins import web_server
-#from threading import Thread
-#from flask import Flask
+from threading import Thread
+from flask import Flask
 from pyrogram import Client
 from pyrogram.enums import ParseMode
 import sys
@@ -12,26 +13,26 @@ from config import LOGGER, PORT, OWNER_ID, SHORT_URL, SHORT_API, SHORT_TUT
 from helper import MongoDB
 
 
-version = "v1.0.0"
+version = "v2.0.0"
 
 # ──────────────────────────────
 # ✅ FLASK + THREAD (Render Support)
 # ──────────────────────────────
 
-#flask_app = Flask(__name__)
+flask_app = Flask(__name__)
 
-#@flask_app.route("/")
-#def home():
-#    return "Bot is running!", 200
+@flask_app.route("/")
+def home():
+    return "Bot is running!", 200
 
 
-#def run_flask():
-#    flask_app.run(
-#        host="0.0.0.0",
-#        port=int(os.environ.get("PORT", 10000)),
-#        threaded=True,
-#        use_reloader=False
-#    )
+def run_flask():
+    flask_app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 10000)),
+        threaded=True,
+        use_reloader=False
+    )
 
 #================================================
 
@@ -186,6 +187,12 @@ class Bot(Client):
             self.LOGGER(__name__, self.name).warning(f"Failed to send restart notification to owner: {e}")
         
         self.username = usr_bot_me.username
+
+    async def send_message(self, *args, **kwargs):
+        """Override to always disable link previews across the entire bot."""
+        kwargs.setdefault("disable_web_page_preview", True)
+        return await super().send_message(*args, **kwargs)
+
     async def stop(self, *args):
         await super().stop()
         self.LOGGER(__name__, self.name).info("Bot stopped.")
