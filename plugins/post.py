@@ -356,7 +356,7 @@ async def cmd_send(client: Client, message: Message):
 
 async def _copy_to_channel(client: Client, src: Message, channel_id: int, reply_markup) -> Message:
     if src.document or src.audio or src.video or src.voice or src.video_note:
-    return await src.copy(
+        return await src.copy(
         chat_id=channel_id,
         reply_markup=reply_markup
     )
